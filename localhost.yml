@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------- #
+## \file localhost.yml
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- hosts: localhost
+  vars:
+    user: "{{ lookup('env', 'USER') }}"
+    home: /home/{{ user }}
+  roles:
+    - aptsources
+    # Common roles
+    - bashrc
+    - packages-dev
+    - timezone
+    - vim
+    # Local roles
+    - packages-localhost
+    - role: libvirt
+      when: ansible_virtualization_role == 'host'
+    # Desktop roles
+    - emacs
+    - lxde
+    - lxpanel
+    - notifications
+    - screen
+    - screensaver-on
+    - xterm
+    - role: homepage
+      vars:
+        src: homepage
+  handlers:
+    - name: openbox reconfigure
+      command: openbox --reconfigure
+    - name: lxpanelctl restart
+      command: lxpanelctl restart
+    - name: xrdb Xresources
+      command: xrdb {{ home }}/.Xresources

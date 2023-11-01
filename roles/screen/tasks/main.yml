@@ -1,0 +1,36 @@
+# ---------------------------------------------------------------------------- #
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- name: screenrc
+  blockinfile:
+    path: "{{ home }}/.screenrc"
+    create: yes
+    block: |
+      startup_message off
+      altscreen on
+      bindkey ^[[1;2D prev
+      bindkey ^[[1;2C next
+      hardstatus alwayslastline "%{= dg} %=%-w%{b ..}%n %t%{= ..}%+w"
+      defscrollback 5000
+      termcapinfo xterm* ti@:te@
+      msgwait 1
+      # C-a e
+      bind e stuff 'printf "\eklocalhost\e\\\\"'
+      shelltitle "localhost"
+
+- name: screen.desktop
+  blockinfile:
+    path: "{{ home }}/.local/share/applications/screen.desktop"
+    create: yes
+    block: |
+      [Desktop Entry]
+      Name=Screen
+      Comment=Ligne de commande
+      Exec=xterm -T mxterm -e "SCREENDIR={{ home }}/.screen screen"
+      Icon=lxterminal
+      Terminal=false
+      Type=Application
+      Categories=TerminalEmulator;System;Utility;

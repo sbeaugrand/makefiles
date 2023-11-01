@@ -1,0 +1,19 @@
+# ---------------------------------------------------------------------------- #
+## \file virtualhost.yml
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- hosts: "{{ host | default('default') }}"
+  vars:
+    user: vagrant
+    home: /home/{{ user }}
+  roles:
+    # Common roles
+    - bashrc
+    - packages-dev
+    - timezone
+    - vim
+    # Remote roles
+    - screen-remote

@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------------------- #
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- name: install localhost packages
+  apt:
+    cache_valid_time: 36000
+    install_recommends: no
+    name:
+      - aptitude
+      - cppcheck
+      - curl
+      - docker.io
+      - dpkg-cross
+      - elpa-cmake-mode
+      - elpa-dpkg-dev-el
+      - elpa-markdown-mode
+      - elpa-systemd
+      - elpa-yaml-mode
+      - emacs-lucid
+      - keychain
+      - pv
+      - rfkill
+      - rsync
+      - screen
+      - sshfs
+      - uncrustify
+      - xterm
+  become: yes
+
+- name: add user to the docker group
+  user:
+    append: yes
+    name: "{{ user }}"
+    groups: docker
+  become: yes

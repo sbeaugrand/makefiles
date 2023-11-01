@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------- #
+## \file includeroles.yml
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- hosts: "{{ host | default('default') }}"
+  vars:
+    user: "{{ lookup('env', 'USER') }}"
+    home: /home/{{ user }}
+  tasks:
+    - name: include roles
+      include_role:
+        name: "{{ item }}"
+      loop: "{{ list }}"
+  handlers:
+    - name: openbox reconfigure
+      command: openbox --reconfigure
+    - name: lxpanelctl restart
+      command: lxpanelctl restart
+    - name: xrdb Xresources
+      command: xrdb {{ home }}/.Xresources

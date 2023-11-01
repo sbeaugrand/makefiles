@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------- #
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- name: vimrc
+  blockinfile:
+    create: yes
+    path: "{{ home }}/.vimrc"
+    marker: '" {mark} ANSIBLE MANAGED BLOCK'
+    block: |
+      set tabstop =4
+      set shiftwidth =4
+      set softtabstop =4
+      set paste
+      set ruler
+      set notitle
+      syntax on
+      hi comment ctermfg=blue cterm=bold
+      let _curfile = expand("%:t")
+      if _curfile =~ "Makefile" ||
+       \ _curfile =~ "makefile" ||
+       \ _curfile =~ ".*\.mk"
+          set noexpandtab
+      else
+          set expandtab
+      endif
+      if $DISPLAY != '' && executable('xsel')
+          xnoremap <C-C> :w !xsel -i -b<CR>
+      endif
