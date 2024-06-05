@@ -29,6 +29,7 @@ variables:
   HOST: lubuntu
   IMAGE: ubuntu:23.04
   BUILD: Debug
+  NOCLEAN: 0
   CMAKE: cmake .. -DCMAKE_BUILD_TYPE=$BUILD
   PROJECT: example
   VERSION: 1.0.0
@@ -51,6 +52,12 @@ variables:
   XCVER: 12
   XCDIR: /data
   PRIVKEY: $HOME/.ssh/id_rsa
+.keychain:
+  script:
+    - >
+      test ! -f $PRIVKEY || test -d /run/lock/.keychain ||
+      TMPDIR=/run/lock keychain --dir /run/lock --nogui $PRIVKEY
+    - test ! -f $PRIVKEY || source /run/lock/.keychain/*-sh
 build:
   stage: build
   except:
@@ -60,7 +67,7 @@ build:
     - mkdir -p build
     - cd build
     - $CMAKE
-    - make --no-print-directory clean
+    - test $NOCLEAN = 1 || make --no-print-directory clean
     - make --no-print-directory -j`nproc`
 package:
   stage: package
@@ -71,11 +78,11 @@ package:
     - export DEBEMAIL=$DEBEMAIL
     - export DEBFULLNAME=$DEBFULLNAME
     - >
-      test -n "$DEBFULLNAME" ||
-      export DEBFULLNAME=`git config --global --get user.name`
-    - >
       test -n "$DEBEMAIL" ||
       export DEBEMAIL=`git config --global --get user.email`
+    - >
+      test -n "$DEBFULLNAME" ||
+      export DEBFULLNAME=`git config --global --get user.name`
     - mkdir -p $BDIR/$PROJECT-$VERSION/data
     - cd $BDIR/$PROJECT-$VERSION
     - dh_make --native --single --yes || true
@@ -83,8 +90,9 @@ package:
     - test ! -d ../../debian || cp -a ../../debian/* debian/
     - test ! -d ../../data   || cp -L ../../data/*   data/
     - test ! -d ../../share  || cp -a ../../share/*  data/
+    - find .. -maxdepth 1 -type f -executable -exec cp {} data/ \;
     - >
-      test ! -f ../$PROJECT || cp -a ../$PROJECT data/$PROJECT &&
+      test ! -f ../$PROJECT ||
       echo "data/$PROJECT /usr/bin/" >>debian/$PROJECT.install
     - >
       test ! -f ../../data/$PROJECT.service ||
@@ -96,7 +104,7 @@ package:
 install:
   stage: install
   script:
-    - sudo apt-get reinstall -y ./build/${PROJECT}_${VERSION}_amd64.deb
+    - sudo apt-get -y reinstall ./build/${PROJECT}_${VERSION}_amd64.deb
 deploy:
   image: $IMAGE
   stage: deploy
@@ -107,8 +115,7 @@ deploy:
     - cp -a $HDIR/$HOST/.vagrant/$PROPATH/build/$PKG build/
     - test -z "$DEP" || cp -a $HDIR/$HOST/.vagrant/$PROPATH/$DEP build/
     - apt update
-    - apt-get install -y $DEP ./build/$PKG
-    - ldd -d -r /usr/bin/$PROJECT
+    - apt-get -y install $DEP ./build/$PKG
 rbuild:
   stage: rbuild
   script:
@@ -118,7 +125,7 @@ rbuild:
     - cd $HDIR/$BHOST
     - >
       $SSH "cd $USERPATH/$PROPATH &&
-      make build BUILD=$BUILD CMAKE='$CMAKE' &&
+      make build BUILD=$BUILD NOCLEAN=$NOCLEAN CMAKE='$CMAKE' &&
       (test $BUILD = Debug || $STRIP build/$PROJECT)"
 rtest:
   stage: rtest
@@ -146,17 +153,14 @@ rinstall:
     - cd $HDIR/$BHOST
     - >
       $SSH "cd $USERPATH/$PROPATH &&
-      sudo apt-get reinstall -y ./build/${PROJECT}_${VERSION}_amd64.deb"
+      sudo apt-get -y reinstall ./build/${PROJECT}_${VERSION}_amd64.deb"
 rdeploy:
   stage: rdeploy
   script:
     - PROPATH=$(basename `readlink -f .`)
     - test -n "$XC" || BDIR=.vagrant/$PROPATH/build
     - test -n "$XC" || cd $HDIR/$BHOST
-    - >
-      test ! -f $PRIVKEY || test -d /run/lock/.keychain ||
-      TMPDIR=/run/lock keychain --dir /run/lock --nogui $PRIVKEY
-    - test ! -f $PRIVKEY || source /run/lock/.keychain/*-sh
+    - !reference [.keychain, script]
     - scp $BDIR/${PROJECT}_${VERSION}_*.deb $SCPTARGET
     - test -n "$SUDOPASS" || read -s SUDOPASS
     - >
@@ -164,8 +168,7 @@ rdeploy:
       echo $SUDOPASS | sudo -S -p \"wait\" systemctl stop $PROJECT"
     - >
       $SSH "cd $USERPATH && echo $SUDOPASS | sudo -S
-      apt-get install --reinstall -y ./${PROJECT}_${VERSION}_*.deb &&
-      ldd -d -r /usr/bin/$PROJECT"
+      apt-get -y reinstall ./${PROJECT}_${VERSION}_*.deb"
 stest:
   stage: stest
   before_script:
@@ -180,7 +183,7 @@ xbuild:
     - mkdir -p build-$XC
     - cd build-$XC
     - $CMAKE -DXC=$XC -DXCVER=$XCVER -DXCDIR=$XCDIR
-    - make --no-print-directory clean
+    - test $NOCLEAN = 1 || make --no-print-directory clean
     - make --no-print-directory -j`nproc`
 xpackage:
   stage: xpackage
@@ -189,13 +192,15 @@ xpackage:
     XC: aarch64-linux-gnu
   before_script:
     - BDIR=build-$XC
-    - CONFIG_SITE=/etc/dpkg-cross/cross-config.arm64
-    - test "$XC" != "aarch64-linux-gnu" || OPTS="-aarm64"
-    - test "$XC" != "arm-linux-gnueabihf" || OPTS="-aarmhf"
+    - test "$XC" != "aarch64-linux-gnu" || ARCH=arm64
+    - test "$XC" != "arm-linux-gnueabihf" || ARCH=armhf
+    - CONFIG_SITE=/etc/dpkg-cross/cross-config.$ARCH
+    - OPTS=-a$ARCH
     - export DEB_BUILD_OPTIONS=nocheck
     - export XC=$XC
     - export XCVER=$XCVER
     - export XCDIR=$XCDIR
+    - export CC=$XC
 xdeploy:
   stage: xdeploy
   extends: rdeploy
@@ -210,17 +215,13 @@ xinstall:
     BLIST: $PROJECT
   script:
     - BDIR=build-$XC
-    - >
-      test ! -f $PRIVKEY || test -d /run/lock/.keychain ||
-      TMPDIR=/run/lock keychain --dir /run/lock --nogui $PRIVKEY
-    - test ! -f $PRIVKEY || source /run/lock/.keychain/*-sh
+    - !reference [.keychain, script]
     - cd $BDIR
     - scp $BLIST $SCPTARGET
     - test -n "$SUDOPASS" || read -s SUDOPASS
     - >
       $SSH "cd $USERPATH && echo $SUDOPASS | sudo -S true && echo &&
-      sudo cp $BLIST /usr/bin/ &&
-      ldd -d -r /usr/bin/$PROJECT"
+      sudo cp $BLIST /usr/bin/"
 xtest:
   stage: xtest
   before_script:
@@ -241,7 +242,7 @@ rxbuild:
     - cd $HDIR/$BHOST
     - >
       $SSH "cd $USERPATH/$PROPATH &&
-      make xbuild BUILD=$BUILD CMAKE='$CMAKE'
+      make xbuild BUILD=$BUILD NOCLEAN=$NOCLEAN CMAKE='$CMAKE'
       XC=$XC XCVER=$XCVER XCDIR=$XCDIR &&
       (test $BUILD = Debug || $STRIP build-$XC/$PROJECT)"
 rxpackage:
@@ -272,14 +273,10 @@ rxinstall:
   script:
     - PROPATH=$(basename `readlink -f .`)
     - BDIR=$HDIR/$BHOST/.vagrant/$PROPATH/build-$XC
-    - >
-      test ! -f $PRIVKEY || test -d /run/lock/.keychain ||
-      TMPDIR=/run/lock keychain --dir /run/lock --nogui $PRIVKEY
-    - test ! -f $PRIVKEY || source /run/lock/.keychain/*-sh
+    - !reference [.keychain, script]
     - cd $BDIR
     - scp $BLIST $URI:/run/lock/
     - test -n "$SUDOPASS" || read -s SUDOPASS
     - >
       $SSH "cd /run/lock && echo $SUDOPASS | sudo -S true && echo &&
-      sudo mv $BLIST /usr/bin/ &&
-      ldd -d -r /usr/bin/$PROJECT"
+      sudo mv $BLIST /usr/bin/"
