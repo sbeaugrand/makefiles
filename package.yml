@@ -44,6 +44,7 @@ variables:
          --exclude=.svn
   URI: example@ip
   SSH: vagrant ssh -c
+  SCP: scp
   USERPATH: /vagrant/.vagrant
   SCPTARGET: $URI:$USERPATH/
   HDIR: ../hosts
@@ -52,6 +53,7 @@ variables:
   XCVER: 12
   XCDIR: /data
   PRIVKEY: $HOME/.ssh/id_rsa
+  APT: apt-get -y -o APT::Sandbox::User=root
 .keychain:
   script:
     - >
@@ -104,7 +106,7 @@ package:
 install:
   stage: install
   script:
-    - sudo apt-get -y reinstall ./build/${PROJECT}_${VERSION}_amd64.deb
+    - sudo $APT reinstall ./build/${PROJECT}_${VERSION}_amd64.deb
 deploy:
   image: $IMAGE
   stage: deploy
@@ -114,8 +116,8 @@ deploy:
     - PROPATH=$(basename `readlink -f .`)
     - cp -a $HDIR/$HOST/.vagrant/$PROPATH/build/$PKG build/
     - test -z "$DEP" || cp -a $HDIR/$HOST/.vagrant/$PROPATH/$DEP build/
-    - apt update
-    - apt-get -y install $DEP ./build/$PKG
+    - $APT update
+    - $APT install $DEP ./build/$PKG
 rbuild:
   stage: rbuild
   script:
@@ -153,7 +155,7 @@ rinstall:
     - cd $HDIR/$BHOST
     - >
       $SSH "cd $USERPATH/$PROPATH &&
-      sudo apt-get -y reinstall ./build/${PROJECT}_${VERSION}_amd64.deb"
+      sudo $APT reinstall ./build/${PROJECT}_${VERSION}_amd64.deb"
 rdeploy:
   stage: rdeploy
   script:
@@ -161,14 +163,14 @@ rdeploy:
     - test -n "$XC" || BDIR=.vagrant/$PROPATH/build
     - test -n "$XC" || cd $HDIR/$BHOST
     - !reference [.keychain, script]
-    - scp $BDIR/${PROJECT}_${VERSION}_*.deb $SCPTARGET
+    - $SCP $BDIR/${PROJECT}_${VERSION}_*.deb $SCPTARGET
     - test -n "$SUDOPASS" || read -s SUDOPASS
     - >
       $SSH "! systemctl -q is-active $PROJECT ||
       echo $SUDOPASS | sudo -S -p \"wait\" systemctl stop $PROJECT"
     - >
       $SSH "cd $USERPATH && echo $SUDOPASS | sudo -S
-      apt-get -y reinstall ./${PROJECT}_${VERSION}_*.deb"
+      $APT reinstall ./${PROJECT}_${VERSION}_*.deb"
 stest:
   stage: stest
   before_script:
@@ -212,12 +214,12 @@ xinstall:
   stage: xinstall
   variables:
     XC: aarch64-linux-gnu
-    BLIST: $PROJECT
   script:
+    - test -n "$BLIST" || BLIST=$PROJECT
     - BDIR=build-$XC
     - !reference [.keychain, script]
     - cd $BDIR
-    - scp $BLIST $SCPTARGET
+    - $SCP $BLIST $SCPTARGET
     - test -n "$SUDOPASS" || read -s SUDOPASS
     - >
       $SSH "cd $USERPATH && echo $SUDOPASS | sudo -S true && echo &&
@@ -269,14 +271,14 @@ rxinstall:
   stage: rxinstall
   variables:
     XC: aarch64-linux-gnu
-    BLIST: $PROJECT
   script:
+    - test -n "$BLIST" || BLIST=$PROJECT
     - PROPATH=$(basename `readlink -f .`)
     - BDIR=$HDIR/$BHOST/.vagrant/$PROPATH/build-$XC
     - !reference [.keychain, script]
     - cd $BDIR
-    - scp $BLIST $URI:/run/lock/
+    - $SCP $BLIST $URI:/run/user/1000/
     - test -n "$SUDOPASS" || read -s SUDOPASS
     - >
-      $SSH "cd /run/lock && echo $SUDOPASS | sudo -S true && echo &&
+      $SSH "cd /run/user/1000 && echo $SUDOPASS | sudo -S true && echo &&
       sudo mv $BLIST /usr/bin/"
