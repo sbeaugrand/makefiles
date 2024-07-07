@@ -1,0 +1,15 @@
+# ---------------------------------------------------------------------------- #
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+---
+- name: install pbuild
+  apt:
+    cache_valid_time: 36000
+    install_recommends: no
+    name:
+      - ubuntu-dev-tools
+      - pbuilder
+      - qemu-user-static
+  become: yes
