@@ -23,10 +23,19 @@ endif
 PROJECT ?= $(shell basename `readlink -f .`)
 IMAGE ?= ubuntu:23.04
 BUILD ?= Debug
+ifeq ($(BUILD),Release)
+ gitlabciyml = gitlab-ci-release.yml
+else
+ gitlabciyml = gitlab-ci.yml
+endif
 NOCLEAN ?= 0
 URI ?= exemple@ip
 SSH ?= vagrant ssh -c
-SCP ?= scp
+ifneq ($(JOIN),)
+ SCP ?= scp $(JOIN)
+else
+ SCP ?= scp
+endif
 USERPATH ?= /vagrant/.vagrant
 ifneq ($(XC),)
  OPTS += -e XC=$(XC)
@@ -64,7 +73,7 @@ gitlabci = ~/.local/bin/gitlabci-local\
  -e SCP="$(SCP)"\
  -e USERPATH=$(USERPATH)\
  $(OPTS)\
- -c gitlab-ci.yml
+ -c $(gitlabciyml)
 propath = $(shell basename `readlink -f .`)
 
 .SUFFIXES:
