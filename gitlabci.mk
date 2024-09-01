@@ -5,8 +5,8 @@
 ## \copyright CeCILL 2.1 Free Software license
 # ---------------------------------------------------------------------------- #
 HDIR ?= ../hosts
-HOST ?= lubuntu
-BHOST ?= lubuntu
+HOST ?= ubuntu2404
+BHOST ?= ubuntu2404
 ifeq (,$(findstring $(MAKECMDGOALS),\
  rbuild\
  rtest\
@@ -21,7 +21,6 @@ else
 endif
 
 PROJECT ?= $(shell basename `readlink -f .`)
-IMAGE ?= ubuntu:23.04
 BUILD ?= Debug
 ifeq ($(BUILD),Release)
  gitlabciyml = gitlab-ci-release.yml
@@ -31,11 +30,6 @@ endif
 NOCLEAN ?= 0
 URI ?= exemple@ip
 SSH ?= vagrant ssh -c
-ifneq ($(JOIN),)
- SCP ?= scp $(JOIN)
-else
- SCP ?= scp
-endif
 USERPATH ?= /vagrant/.vagrant
 ifneq ($(XC),)
  OPTS += -e XC=$(XC)
@@ -64,19 +58,22 @@ endif
 gitlabci = ~/.local/bin/gitlabci-local\
  -e HOST=$(HOST)\
  -e BHOST=$(BHOST)\
- -e IMAGE=$(IMAGE)\
  -e BUILD=$(BUILD)\
  -e NOCLEAN=$(NOCLEAN)\
  -e CMAKE="$(NCMAKE)"\
  -e URI=$(URI)\
  -e SSH="$(SSH)"\
- -e SCP="$(SCP)"\
  -e USERPATH=$(USERPATH)\
  $(OPTS)\
  -c $(gitlabciyml)
 propath = $(shell basename `readlink -f .`)
 
 .SUFFIXES:
+
+.PHONY: version
+version:
+	@(grep ' VERSION:' $(gitlabciyml) || echo ' VERSION: 1.0.0') |\
+	 awk '{ print $$2 }'
 
 .PHONY: \
 build test package install rbuild rtest rpackage rinstall rdeploy stest
@@ -87,10 +84,6 @@ build test package install rbuild rtest rpackage rinstall rdeploy stest:
 xbuild xpackage xinstall xdeploy xtest rxbuild rxpackage rxdeploy rxinstall
 xbuild xpackage xinstall xdeploy xtest rxbuild rxpackage rxdeploy rxinstall:
 	@$(gitlabci) -H -R -p $@
-
-.PHONY: deploy
-deploy:
-	@$(gitlabci) -E docker $@
 
 test%:
 	@$(gitlabci) -H -R $@
