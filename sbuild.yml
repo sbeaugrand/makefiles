@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------- #
-## \file pbuilder.yml
+## \file sbuild.yml
 ## \author Sebastien Beaugrand
 ## \sa http://beaugrand.chez.com/
 ## \copyright CeCILL 2.1 Free Software license
@@ -79,10 +79,9 @@ rxpackage:
   script:
     - PROPATH=$(basename `readlink -f .`)
     - cd $HDIR/$BHOST
-    - test -n "$DIST" || DIST=`lsb_release -s -c 2>/dev/null`
+    - test -n "$DIST" || DIST="stable"
     - >
-      $SSH "cd $UPATH/$PROPATH/build &&
-      (test -f $UPATH/pbuilder/$DIST-$ARCH-base.tgz ||
-      pbuilder-dist $DIST $ARCH create
-      --extrapackages 'cmake debhelper-compat fakeroot pkg-config') &&
-      pbuilder-dist $DIST $ARCH ${PKG}_${VERSION}${REVISION}.dsc"
+      $SSH "cd $UPATH/$PROPATH/build/$REPO &&
+      sbuild --build=$ARCH --host=$ARCH --chroot-mode=unshare
+      -c $UPATH/sbuild/$DIST-$ARCH.tar.zst --no-apt-update
+      --build-dir=$UPATH/sbuild --extra-package=$UPATH/sbuild"

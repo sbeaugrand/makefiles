@@ -4,15 +4,22 @@
 ## \copyright CeCILL 2.1 Free Software license
 # ---------------------------------------------------------------------------- #
 ---
-- name: install pbuilder packages
+- name: install sbuild packages
   apt:
     cache_valid_time: 36000
     install_recommends: no
     name:
-      - ubuntu-dev-tools
-      - pbuilder
+      - sbuild
+      - mmdebstrap
+      - uidmap
+      - binfmt-support
       - qemu-user-static
       - arch-test
-      - binfmt-support
-      - lintian
+  become: yes
+
+- name: add user to the sbuild group
+  user:
+    append: yes
+    name: "{{ user }}"
+    groups: sbuild
   become: yes
