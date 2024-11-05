@@ -83,21 +83,15 @@ package:
     - >
       test -n "$DEBFULLNAME" ||
       export DEBFULLNAME=`git config --global --get user.name`
-    - mkdir -p $BDIR/$PROJECT-$VERSION/data
+    - mkdir -p $BDIR/$PROJECT-$VERSION
     - cd $BDIR/$PROJECT-$VERSION
+    - rm -f debian/$PROJECT.install
     - dh_make --native --single --yes || true
     - rm -f debian/README*
-    - cat /dev/null >debian/$PROJECT.install
-    - test ! -d ../../debian-nr || cp -L ../../debian-nr/* debian/
-    - test ! -d ../../data   || cp -L ../../data/*   data/
-    - test ! -d ../../share  || cp -a ../../share/*  data/
-    - find .. -maxdepth 1 -type f -executable -exec cp {} data/ \;
+    - test ! -d ../../debian-nr || cp -Lr ../../debian-nr/* debian/
     - >
-      test ! -f ../$PROJECT ||
-      echo "data/$PROJECT /usr/bin/" >>debian/$PROJECT.install
-    - >
-      test ! -d ../../share || ls ../../share |
-      sed "s#\(.*\)#data/\1 /usr/share/$PROJECT/#" >>debian/$PROJECT.install
+      find .. -maxdepth 1 -type f -executable
+      -exec echo "{} /usr/bin/" >>debian/$PROJECT.install \;
     - SOURCE_DATE_EPOCH=`date +%s` dpkg-buildpackage --no-sign $OPTS
 install:
   stage: install
