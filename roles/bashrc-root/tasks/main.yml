@@ -4,22 +4,12 @@
 ## \copyright CeCILL 2.1 Free Software license
 # ---------------------------------------------------------------------------- #
 ---
-- name: "/home/{{ user }}/.bashrc"
+- name: "/root/.bashrc"
   blockinfile:
-    path: "/home/{{ user }}/.bashrc"
-    create: yes
-    block: |
-      if [ -f ~/.bash_login ]; then
-          . ~/.bash_login
-      fi
-
-- name: "/home/{{ user }}/.bash_login"
-  blockinfile:
-    path: "/home/{{ user }}/.bash_login"
+    path: "/root/.bashrc"
     create: yes
     block: |
       PS1='\u:\w> '
-      SCREENDIR={{ home }}/.screen
       PATH={{ home }}/.local/bin:/usr/local/bin:/usr/bin:/bin
       if [ -d {{ home }}/install/debinst/bin ]; then
           PATH=$PATH:{{ home }}/install/debinst/bin
@@ -53,10 +43,4 @@
           bind '"\e[1;5A": history-search-backward'
           bind '"\e[1;5B": history-search-forward'
       fi
-      bind 'set bell-style none'
-      test -n "$DISPLAY" && xset -b
-      test -n "$DISPLAY" && setxkbmap -option "nbsp:none"
-
-      alias kc='TMPDIR=/run/lock keychain --dir /run/lock --nogui ~/.ssh/id_rsa && source /run/lock/.keychain/*-sh'
-      test -d /run/lock/.keychain && kc
-      cd
+  become: yes

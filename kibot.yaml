@@ -1,0 +1,85 @@
+# ---------------------------------------------------------------------------- #
+## \file kibot.yaml
+## \author Sebastien Beaugrand
+## \sa http://beaugrand.chez.com/
+## \copyright CeCILL 2.1 Free Software license
+# ---------------------------------------------------------------------------- #
+kibot:
+  version: 1
+
+global:
+  filters:
+    - number: 9
+      regex:  'KiCad config without environment.vars section'
+    - number: 10
+      regex:  'Unable to find KiCad 3D models'
+
+preflight:
+  run_drc: false
+  run_erc: false
+  update_qr: false
+  update_xml: false
+
+outputs:
+  - name: schema
+    comment: 'sch pdf'
+    type: pdf_sch_print
+    dir: build
+    options:
+      output: '%f-schema.pdf'
+      frame: false
+  - name: cuivre
+    comment: 'pcb ps'
+    type: ps
+    dir: build
+    options:
+      exclude_edge_layer: false
+      plot_footprint_values: false
+      a4_output: false
+    layers:
+      - layer: B.Cu
+        suffix: B_Cu
+      - layer: F.SilkS
+        suffix: F_SilkS
+  - name: pcb
+    comment: 'pcb a4'
+    type: pcb_print
+    dir: build
+    options:
+      output_name: '%f-pcb.pdf'
+      plot_sheet_reference: false
+      force_edge_cuts: true
+      forced_edge_cuts_color: '#ffffff'
+      scaling: 0
+      drill_marks: small
+      pages:
+        - layers:
+          - B.Cu
+          - F.Fab
+  - name: light
+    comment: 'sch markdown light'
+    type: svg_sch_print
+    dir: build
+    options:
+      output: '%f-light.svg'
+      frame: false
+  - name: darklight
+    comment: 'sch markdown darklight'
+    type: svg_sch_print
+    dir: build
+    options:
+      output: '%f-darklight.svg'
+      frame: false
+      color_theme: darklight
+  - name: svg
+    comment: 'pcb markdown'
+    type: pcb_print
+    dir: build
+    options:
+      format: SVG
+      output_name: '%f-pcb.svg'
+      plot_sheet_reference: false
+      pages:
+        - layers:
+          - B.Cu
+          - F.Fab

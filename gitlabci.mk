@@ -68,6 +68,10 @@ gitlabci = ~/.local/bin/gitlabci-local\
  -c $(gitlabciyml)
 propath = $(shell basename `readlink -f .`)
 
+define print-help
+ sed -n -e '/# $1/,/```$$/{/```/!p}' README.md | grep --color -C99 '^# .*'
+endef
+
 .SUFFIXES:
 
 .PHONY: version
@@ -135,5 +139,11 @@ tar:
 	 --exclude=*~\
 	 --exclude=.*.swp\
 	 --exclude=build\
+	 --exclude=build-*\
+	 --exclude=.git\
+	 --exclude=__pycache__\
+	 --exclude=*-bak\
+	 --exclude=kicad/*.pdf\
+	 --exclude=kicad/*.svg\
 	 makefiles/*.*\
 	 $(propath)

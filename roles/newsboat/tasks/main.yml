@@ -4,14 +4,13 @@
 ## \copyright CeCILL 2.1 Free Software license
 # ---------------------------------------------------------------------------- #
 ---
-- name: "{{ home }}/.uncrustify.cfg"
-  copy:
-    src: uncrustify.cfg
-    dest: "{{ home }}/.uncrustify.cfg"
-    force: no
+- name: urls
+  lineinfile:
+    path: "{{ home }}/.newsboat/urls"
+    line: https://micronews.debian.org/feeds/feed.rss
+    create: yes
 
-- name: "{{ home }}/.local/bin/uncrustify.sh"
-  copy:
-    src: uncrustify.sh
-    dest: "{{ home }}/.local/bin/"
-    mode: 0755
+- name: autostart
+  lineinfile:
+    path: "{{ home }}/.config/lxsession/LXDE/autostart"
+    line: "@{{ home }}/install/debinst/bin/unread.sh"
