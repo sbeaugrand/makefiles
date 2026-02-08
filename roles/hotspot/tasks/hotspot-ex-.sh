@@ -4,32 +4,32 @@
 ## \sa http://beaugrand.chez.com/
 ## \copyright CeCILL 2.1 Free Software license
 # ---------------------------------------------------------------------------- #
+nftsh=$HOME/install/debinst/bin/nft.sh
+
+ipE1a=10.66.0.113
+ipE1b=10.66.0.152
+ipE2a=10.66.0.39
+ipE2b=10.66.0.170
+ipE3a=10.66.0.67
+ipE3b=10.66.0.70
+
 setup()
 {
-    whitelist="10.66.0.168, 10.66.0.67, 10.66.0.70, 10.66.0.39, 10.66.0.152, 10.66.0.170"
-    for ip in 10.66.0.39 10.66.0.67; do
-        addFilter $ip m.youtube
-        addFilter $ip www.youtube
-        addFilter $ip www.tiktok
+    whitelist="$ipE1a, $ipE1b, $ipE2a, $ipE2b, $ipE3a, $ipE3b, 10.66.0.168"
+    for ip in $ipE1a $ipE2a $ipE3a; do
+        block $ip m.youtube
+        block $ip www.youtube
+        block $ip www.tiktok
     done
-    if ((`date +%H%M | awk '{ print $0 + 1 }'` < 1730)); then
-        if ! nft.sh list 2>/dev/null | grep -q "comment"; then
-            nft.sh block 10.66.0.39 "comment"
-            tmp=/tmp/crontab
-            crontab -l 2>/dev/null >$tmp
-            if ! grep -q "comment" $tmp; then
-                echo '30 17 * * * /bin/bash PATH/nft.sh unblock "comment"' >>$tmp
-                crontab $tmp
-            fi
-        fi
-    fi
-    if ! nft.sh list 2>/dev/null | grep -q "comment2"; then
-        sudo nft add rule filter prerouting ip saddr 10.66.0.152 hour \> \"21:00\" counter drop comment \"comment2\"
+    unblockAfter 18 00 $ipE1a "enfant1"
+    unblockAfter 18 00 $ipE2a "enfant2"
+    if ! nft.sh list 2>/dev/null | grep -q "Enfant1 tablette"; then
+        nft.sh block $ipE1b "Enfant1 tablette" 21:00
     fi
 }
+
 loop()
 {
-    if ! nft.sh list 2>/dev/null | grep -q "Comment 20"; then
-        addFilterAfter 20 10.66.0.39 "Alias  game.brawlstarsgame.com" "Comment 20"
-    fi
+    blockAfter 40 $ipE1a "Enfant1 game.brawlstarsgame.com" "Enfant1 40"
+    blockAfter 20 $ipE2a "Enfant2 game.brawlstarsgame.com" "Enfant2 20"
 }
